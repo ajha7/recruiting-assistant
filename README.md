@@ -14,7 +14,7 @@ and a follow-up, with every tool call, token counts and timings.
 
 ```bash
 git clone https://github.com/ajha7/recruiting-assistant.git && cd recruiting-assistant
-cp .env.example .env          # add OPENAI_API_KEY and OPENAI_MODEL (gpt-5.5 passes all evals)
+cp .env.example .env          # add OPENAI_API_KEY and OPENAI_MODEL (see Eval results)
 make setup && make data       # uv sync; build data/recruiting.db (deterministic)
 make test                     # 48 tests, no API key needed
 make app                      # Streamlit UI;  also: make eval RUNS=3,  python agent.py "question" --role R2
@@ -131,7 +131,7 @@ Each entry gives the choice, why, and what it costs.
   under Streamlit's test harness, and tools are checked against ground truth written separately in `planted.py`.
 - **Evals are mechanical and repeated.** Eight questions, N runs each, checked by regex and set comparison, plus
   checks on every answer: cited IDs must exist in that run's tool results, no false security notes, no gendered
-  pronouns outside quotes. Failed answers are saved for review. *Cost:* a correct answer phrased oddly can fail.
+  pronouns outside quotes. Failed answers are saved to `evals/failures/<model>/` (not committed) for review. *Cost:* a correct answer phrased oddly can fail.
 
 ### Not built, on purpose
 
@@ -201,7 +201,7 @@ terms, and a no-hallucinated-IDs check that every cited `APP-###` appears in a t
 | injection | 3/3 | 1/3 |
 | **Total** | **23/24** | **16/24** |
 
-**Use `gpt-5.5`.** Its one failure: a "Gaps" line called a candidate "her" right after quoting an interviewer's note
+**`gpt-5.5` scored highest.** Its one failure: a "Gaps" line called a candidate "her" right after quoting an interviewer's note
 that did ("owns her pipeline end to end"). All 8 mini failures were gendered pronouns, several guessing gender from
 first names. The mini column was run just before two small prompt tweaks (cap the Sources line at 8 IDs, omit it when
 empty); every failure was a pronoun, which those tweaks don't touch. `gpt-5.5` takes about 7 minutes for 24 runs.

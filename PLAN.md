@@ -4,12 +4,6 @@
 
 # Recruiting Assistant: build plan
 
-> **Historical document.** This is the plan as approved before the build. Two things changed afterwards:
-> the agent was switched from Anthropic's API to OpenAI Chat Completions (so references to `anthropic`,
-> `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL` below are out of date), and the `feedback_overdue` task rule
-> was renamed `feedback_owed`, because it also covers feedback that is owed but not yet overdue.
-> The README describes the system as built.
-
 > On approval this gets copied to `~/Desktop/AtomicSystems/PLAN.md` (plan mode only lets me write here). No code is written until you approve.
 
 ## 0. Read this first: where your decisions look wrong or weak
