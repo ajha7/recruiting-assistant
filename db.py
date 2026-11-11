@@ -59,8 +59,18 @@ _SEARCH_WHERE = """FROM applications a JOIN candidates c ON c.id = a.candidate_i
     AND (:status IS NULL OR a.status = :status) AND (:name IS NULL OR c.name LIKE '%' || :name || '%')"""
 
 
-def search_application_rows(role_id, stage, status, name_contains, limit):
-    """Returns (total_matches, rows). Furthest stage first, then id. This ordering is NOT a ranking."""
+_SEARCH_ORDER = {
+    # Furthest stage first. A pipeline view, NOT a ranking.
+    "stage": """CASE a.current_stage WHEN 'hired' THEN 6 WHEN 'offer' THEN 5 WHEN 'onsite' THEN 4
+                WHEN 'technical' THEN 3 WHEN 'hiring_manager' THEN 2 WHEN 'recruiter_screen' THEN 1
+                ELSE 0 END DESC, a.id""",
+    # Highest average rating first, unrated last, more interviews breaking ties.
+    "rating": "avg_rating IS NULL, avg_rating DESC, n_ratings DESC, a.id",
+}
+
+
+def search_application_rows(role_id, stage, status, name_contains, limit, sort_by="stage"):
+    """Returns (total_matches, rows), ordered by _SEARCH_ORDER[sort_by]."""
     p = dict(role_id=role_id, stage=stage, status=status, name=name_contains, as_of=AS_OF, limit=limit)
     total = _rows("SELECT COUNT(*) AS n " + _SEARCH_WHERE, p)[0]["n"]
     rows = _rows(f"""
@@ -74,9 +84,7 @@ def search_application_rows(role_id, stage, status, name_contains, limit):
                    COALESCE((SELECT MAX(sent_at) FROM emails m WHERE m.application_id = a.id), '')
                ) AS last_activity_at
         {_SEARCH_WHERE}
-        ORDER BY CASE a.current_stage WHEN 'hired' THEN 6 WHEN 'offer' THEN 5 WHEN 'onsite' THEN 4
-                 WHEN 'technical' THEN 3 WHEN 'hiring_manager' THEN 2 WHEN 'recruiter_screen' THEN 1
-                 ELSE 0 END DESC, a.id
+        ORDER BY {_SEARCH_ORDER[sort_by]}
         LIMIT :limit""", p)
     return total, rows
 

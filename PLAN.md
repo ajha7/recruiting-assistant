@@ -1,3 +1,7 @@
+> **Historical document.** This is the plan approved before the build. Where the code differs, the code and README
+> win: the agent now uses OpenAI Chat Completions instead of the Anthropic SDK, `FastMCP` is `MCPServer` (MCP 2.x),
+> the task rule `feedback_overdue` is named `feedback_owed`, and the eval results are in the README.
+
 # Recruiting Assistant: build plan
 
 > **Historical document.** This is the plan as approved before the build. Two things changed afterwards:

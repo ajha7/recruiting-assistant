@@ -91,11 +91,40 @@ def test_refusal_is_graceful():
     assert out["stopped"] == "refusal" and "declined" in out["answer"]
 
 
-def test_history_is_replayed_as_plain_text():
+def test_older_history_is_replayed_as_text_with_its_role():
+    older = {"question": "older q", "role_id": "R2", "role_title": "Machine Learning Engineer",
+             "answer": "older a", "stopped": "done", "messages": [{"role": "user", "content": "unused"}]}
+    failed = {"question": "failed q", "role_id": None, "role_title": None, "answer": "boom", "stopped": "error"}
     client = FakeClient([reply(message("ok"))])
-    run(client, history=[("earlier q", "earlier a")])
-    msgs = client.calls[0]["messages"]
-    assert [m["content"] for m in msgs[1:]] == ["earlier q", "earlier a", "q"]
+    run(client, history=[older, failed])
+    contents = [m["content"] for m in client.calls[0]["messages"][1:]]
+    # Only the latest turn may be replayed in full; a failed latest turn falls back to text.
+    assert contents == ["[Selected role: R2 - Machine Learning Engineer]\nolder q", "older a", "failed q", "boom", "q"]
+
+
+def test_latest_turn_is_carried_forward_with_its_tool_results():
+    first = FakeClient([tool_reply(None, ("t1", "get_candidate_profile", {"application_id": "APP-009"})),
+                        reply(message("APP-009 has weak interviews."))])
+    turn1 = run(first, role_id="R2", role_title="Machine Learning Engineer")
+    assert [m["role"] for m in turn1["messages"]] == ["user", "assistant", "tool", "assistant"]
+    turn1.update(question="q", role_id="R2", role_title="Machine Learning Engineer")
+
+    second = FakeClient([reply(message("Because of FB-040."))])
+    out = asyncio.run(agent.ask("why not APP-009?", history=[turn1], client=second))
+    sent = second.calls[0]["messages"]
+    assert [m["role"] for m in sent] == ["system", "user", "assistant", "tool", "assistant", "user"]
+    assert '"application_id": "APP-009"' in sent[3]["content"]  # the profile is still in context
+    assert out["tool_calls"] == [] and len(second.calls) == 1  # answered without re-fetching
+
+
+def test_on_event_reports_each_step_as_it_starts():
+    events = []
+    client = FakeClient([tool_reply(None, ("t1", "list_roles", {}), ("t2", "get_pending_tasks", {"role_id": "R3"})),
+                         reply(message("done"))])
+    asyncio.run(agent.ask("q", client=client, on_event=events.append))
+    assert events == [{"type": "model", "round": 1}, {"type": "tool", "name": "list_roles", "args": {}},
+                      {"type": "tool", "name": "get_pending_tasks", "args": {"role_id": "R3"}},
+                      {"type": "model", "round": 2}]
 
 
 def test_missing_model_gives_clear_error(monkeypatch):

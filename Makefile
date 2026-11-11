@@ -10,7 +10,7 @@ test:
 	uv run pytest
 
 eval:
-	uv run python evals/run_evals.py
+	uv run python evals/run_evals.py --runs $(or $(RUNS),1)
 
 app:
 	uv run streamlit run app.py
