@@ -8,7 +8,7 @@ people and all `@example.com` addresses.
 ## Setup (5 commands)
 
 ```bash
-git clone <repo> && cd recruiting-assistant
+git clone https://github.com/ajha7/recruiting-assistant.git && cd recruiting-assistant
 cp .env.example .env          # add OPENAI_API_KEY and OPENAI_MODEL (the model id you want)
 make setup && make data       # uv sync; build data/recruiting.db (deterministic)
 make test                     # 42 tests, no API key needed
